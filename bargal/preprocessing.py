@@ -10,6 +10,7 @@ from bargal.images.transformations import (
     ImageTransformer,
     log_transformer,
     center_zoom_transformer,
+    circular_mask_transformer,
 )
 from bargal.models import Observation
 
@@ -92,7 +93,24 @@ GRLOG_GR_DIFF = GRDiffProcessor(
     )
 )
 
+GRLOG_GR_DIFF_MASKED = GRDiffProcessor(
+    g_transform=make_image_pipeline(
+        adaptive_normalize_transformer(),
+        bilateral_filter_transformer()
+    ),
+    r_transform=make_image_pipeline(
+        log_transformer()
+    ),
+    result_transform=make_image_pipeline(
+        center_zoom_transformer(2),
+        adaptive_normalize_transformer(),
+        circular_mask_transformer()
+    )
+)
+
+
 PREPROCESSORS = {
     'SQRT_GR_DIFF': SQRT_GR_DIFF,
-    'GRLOG_GR_DIFF': GRLOG_GR_DIFF
+    'GRLOG_GR_DIFF': GRLOG_GR_DIFF,
+    'GRLOG_GR_DIFF_MASKED': GRLOG_GR_DIFF_MASKED,
 }
