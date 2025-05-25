@@ -291,6 +291,7 @@ def circular_mask_transformer(mask_radius: float = 0.4) -> ImageTransformer:
     Returns:
         ImageTransformer: An ImageTransformer that applies a circular mask to an image.
     """
+
     def _apply_circular_mask(image: np.ndarray) -> np.ndarray:
         height, width = image.shape
         center_x, center_y = width // 2, height // 2
@@ -303,3 +304,21 @@ def circular_mask_transformer(mask_radius: float = 0.4) -> ImageTransformer:
         return image * mask
 
     return ImageTransformer(_apply_circular_mask)
+
+
+def remove_background_transformer():
+    """
+    Returns an ImageTransformer that removes the background from the image.
+
+    Returns:
+        ImageTransformer: An ImageTransformer that removes the background from the image.
+    """
+
+    to_foreground_mask = make_image_pipeline(
+        adaptive_normalize_transformer(),
+        ImageTransformer(lambda i: i * 255),
+        threshold_transformer(),
+        ImageTransformer(lambda i: i / 255),
+    )
+
+    return ImageTransformer(lambda i: i * to_foreground_mask)

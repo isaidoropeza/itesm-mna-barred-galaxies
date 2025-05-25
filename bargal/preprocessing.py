@@ -31,6 +31,31 @@ class ImageProcessor(ABC):
         pass
 
 
+class GRRatioProcessor(ImageProcessor):
+    def __init__(self, *,
+                 g_transform: ImageTransformer,
+                 r_transform: ImageTransformer,
+                 result_transform: ImageTransformer) -> None:
+        """
+        Initialize the GRRatioProcessor with specific image processing pipelines for g and r bands.
+
+        Args:
+            g_transform (ImageTransformer): Transformation for the g band.
+            r_transform (ImageTransformer): Transformation for the r band.
+            result_transform (ImageTransformer): Transformation for the result after computing the division.
+        """
+        self.g_transform = g_transform
+        self.r_transform = r_transform
+        self.result_transform = result_transform
+
+    def preprocess(self, obs: Observation) -> np.ndarray:
+        """
+        Implementation of the preprocess method for GRRatioProcessor.
+        """
+        return self.result_transform(
+            self.g_transform(obs.g_band) / (self.r_transform(obs.r_band) + np.finfo(float).eps)
+        )
+
 class GRDiffProcessor(ImageProcessor):
     """
     GRDiffProcessor is a specialized image processor that computes the difference between
