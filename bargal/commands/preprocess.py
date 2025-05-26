@@ -60,7 +60,9 @@ def _get_and_process_image(galaxy: Galaxy, *, client: GalaxyImageClient, img_pro
     Returns:
         np.ndarray: The processed image array.
     """
-    observation = client.get_as_observation(galaxy, save_to_disk=True, use_fits=True, skip_rgb=True)
+    # The CROP_RGB preprocessor requires the observation's RGB representation
+    skip_rgb = img_processor!=PREPROCESSORS['CROP_RGB']
+    observation = client.get_as_observation(galaxy, save_to_disk=True, use_fits=True, skip_rgb=skip_rgb)
     return (img_processor.preprocess(observation)*255).astype(np.uint8)
 
 def _save_image(img: np.ndarray, output_dir: str, name: str) -> None:
@@ -73,7 +75,8 @@ def _save_image(img: np.ndarray, output_dir: str, name: str) -> None:
         name (str): The name of the galaxy.
     """
     processed_image_name = f"{output_dir}/{name}.png"
-    with Image.fromarray(img, 'L') as img:
+    mode = 'RGB' if img.ndim == 3 else 'L'
+    with Image.fromarray(img, mode) as img:
         img.save(processed_image_name)
 
 if __name__ == "__main__":

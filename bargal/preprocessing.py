@@ -10,6 +10,8 @@ from bargal.images.transformations import (
     ImageTransformer,
     log_transformer,
     center_zoom_transformer,
+    circular_mask_transformer,
+    normalize_transformer,
 )
 from bargal.models import Observation
 
@@ -29,6 +31,53 @@ class ImageProcessor(ABC):
         """
         pass
 
+
+class RGBProcessor(ImageProcessor):
+    """
+    RGBProcessor is an implementation of ImageProcessor that only transforms the RGB representation of the observation.
+    """
+
+    def __init__(self, transform: ImageTransformer):
+        """
+        Initialize a new RBGProcessor.
+
+        Args:
+            transform (ImageTransformer): A transformation to be applied to the RGB representation of the observation.
+        """
+        self.transform = transform
+
+    def preprocess(self, obs: Observation) -> np.ndarray:
+        r = self.transform(obs.rgb_repr[:,:,0])
+        g = self.transform(obs.rgb_repr[:,:,1])
+        b = self.transform(obs.rgb_repr[:,:,2])
+
+        return np.stack([r,g,b], axis=-1)
+
+
+class GRRatioProcessor(ImageProcessor):
+    def __init__(self, *,
+                 g_transform: ImageTransformer,
+                 r_transform: ImageTransformer,
+                 result_transform: ImageTransformer) -> None:
+        """
+        Initialize the GRRatioProcessor with specific image processing pipelines for g and r bands.
+
+        Args:
+            g_transform (ImageTransformer): Transformation for the g band.
+            r_transform (ImageTransformer): Transformation for the r band.
+            result_transform (ImageTransformer): Transformation for the result after computing the division.
+        """
+        self.g_transform = g_transform
+        self.r_transform = r_transform
+        self.result_transform = result_transform
+
+    def preprocess(self, obs: Observation) -> np.ndarray:
+        """
+        Implementation of the preprocess method for GRRatioProcessor.
+        """
+        return self.result_transform(
+            self.g_transform(obs.g_band) / (self.r_transform(obs.r_band) + np.finfo(float).eps)
+        )
 
 class GRDiffProcessor(ImageProcessor):
     """
@@ -92,7 +141,32 @@ GRLOG_GR_DIFF = GRDiffProcessor(
     )
 )
 
+GRLOG_GR_DIFF_MASKED = GRDiffProcessor(
+    g_transform=make_image_pipeline(
+        adaptive_normalize_transformer(),
+        bilateral_filter_transformer()
+    ),
+    r_transform=make_image_pipeline(
+        log_transformer()
+    ),
+    result_transform=make_image_pipeline(
+        center_zoom_transformer(2),
+        adaptive_normalize_transformer(),
+        circular_mask_transformer()
+    )
+)
+
+CROP_RGB=RGBProcessor(
+    transform=make_image_pipeline(
+        center_zoom_transformer(2),
+        normalize_transformer(),
+    )
+)
+
+
 PREPROCESSORS = {
     'SQRT_GR_DIFF': SQRT_GR_DIFF,
-    'GRLOG_GR_DIFF': GRLOG_GR_DIFF
+    'GRLOG_GR_DIFF': GRLOG_GR_DIFF,
+    'GRLOG_GR_DIFF_MASKED': GRLOG_GR_DIFF_MASKED,
+    'CROP_RGB': CROP_RGB,
 }
