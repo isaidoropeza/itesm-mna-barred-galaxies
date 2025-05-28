@@ -321,4 +321,4 @@ def remove_background_transformer():
         ImageTransformer(lambda i: i / 255),
     )
 
-    return ImageTransformer(lambda i: i * to_foreground_mask)
+    return ImageTransformer(lambda i: i * to_foreground_mask(i))
