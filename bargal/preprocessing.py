@@ -12,6 +12,9 @@ from bargal.images.transformations import (
     center_zoom_transformer,
     circular_mask_transformer,
     normalize_transformer,
+    remove_background_transformer,
+    squared_transformer,
+    power_transformer,
 )
 from bargal.models import Observation
 
@@ -163,10 +166,28 @@ CROP_RGB=RGBProcessor(
     )
 )
 
+GR_RATIO = GRRatioProcessor(
+    g_transform=make_image_pipeline(
+        remove_background_transformer(),
+        adaptive_normalize_transformer(),
+        bilateral_filter_transformer()
+    ),
+    r_transform=make_image_pipeline(
+        squared_transformer(),
+        normalize_transformer()
+    ),
+    result_transform=make_image_pipeline(
+        center_zoom_transformer(1.25),
+        adaptive_normalize_transformer(),
+        power_transformer(2.5),
+    )
+)
+
 
 PREPROCESSORS = {
     'SQRT_GR_DIFF': SQRT_GR_DIFF,
     'GRLOG_GR_DIFF': GRLOG_GR_DIFF,
     'GRLOG_GR_DIFF_MASKED': GRLOG_GR_DIFF_MASKED,
     'CROP_RGB': CROP_RGB,
+    'GR_RATIO': GR_RATIO,
 }
